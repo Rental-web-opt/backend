@@ -11,8 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/auth") 
-@CrossOrigin(origins = "*") // Autoriser le frontend
+@RequestMapping("/api/auth")
 public class AuthController {
 
     @Autowired private UserRepository userRepository;
@@ -39,8 +38,11 @@ public class AuthController {
         String email = request.get("email");
         String password = request.get("password");
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+        User user = userRepository.findByEmail(email).orElse(null);
+        
+        if (user == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "Utilisateur non trouvé"));
+        }
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
             return ResponseEntity.status(401).body(Map.of("message", "Mot de passe incorrect"));
