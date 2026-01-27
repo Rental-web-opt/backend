@@ -15,12 +15,31 @@ public class SearchController {
     @Autowired(required = false)
     private CarSearchRepository carSearchRepository;
 
+    @Autowired(required = false)
+    private com.rental.backend.elasticsearch.AgencySearchRepository agencySearchRepository;
+
     @GetMapping("/cars")
     public List<CarDocument> searchCars(@RequestParam String query) {
         if (carSearchRepository == null) {
             return Collections.emptyList();
         }
         return carSearchRepository.findByNameContainingOrBrandContaining(query, query);
+    }
+
+    @GetMapping("/agencies")
+    public List<com.rental.backend.elasticsearch.AgencyDocument> searchAgencies(@RequestParam String query) {
+        if (agencySearchRepository == null) {
+            return Collections.emptyList();
+        }
+        return agencySearchRepository.findByNameContaining(query);
+    }
+
+    @GetMapping("/agencies/city/{city}")
+    public List<com.rental.backend.elasticsearch.AgencyDocument> searchAgenciesByCity(@PathVariable String city) {
+        if (agencySearchRepository == null) {
+            return Collections.emptyList();
+        }
+        return agencySearchRepository.findByCity(city);
     }
 
     @GetMapping("/cars/type/{type}")

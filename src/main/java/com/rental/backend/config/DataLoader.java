@@ -7,7 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-@Component
+//@Component
 public class DataLoader implements CommandLineRunner {
 
     @Autowired private UserRepository userRepository;
@@ -15,6 +15,8 @@ public class DataLoader implements CommandLineRunner {
     @Autowired private CarRepository carRepository;
     @Autowired private DriverRepository driverRepository;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired(required = false) private com.rental.backend.elasticsearch.CarSearchRepository carSearchRepository;
+    @Autowired(required = false) private com.rental.backend.elasticsearch.AgencySearchRepository agencySearchRepository;
 
     @Override
     public void run(String... args) {
@@ -88,6 +90,35 @@ public class DataLoader implements CommandLineRunner {
             driverRepository.save(driver);
 
             System.out.println("=== Données initialisées avec succès ===");
+            
+            // Indexation initiale dans Elasticsearch
+            if (carSearchRepository != null) {
+                carRepository.findAll().forEach(car -> {
+                    com.rental.backend.elasticsearch.CarDocument doc = new com.rental.backend.elasticsearch.CarDocument();
+                    doc.setId(car.getId().toString());
+                    doc.setName(car.getName());
+                    doc.setBrand(car.getBrand());
+                    doc.setType(car.getType());
+                    doc.setPricePerDay(car.getPricePerDay());
+                    doc.setAvailable(car.getAvailable());
+                    carSearchRepository.save(doc);
+                });
+                System.out.println("⚡ Elasticsearch synchronisé avec les voitures.");
+            }
+
+            if (agencySearchRepository != null) {
+                agencyRepository.findAll().forEach(agency -> {
+                    com.rental.backend.elasticsearch.AgencyDocument doc = new com.rental.backend.elasticsearch.AgencyDocument();
+                    doc.setId(agency.getId().toString());
+                    doc.setName(agency.getName());
+                    doc.setCity(agency.getCity());
+                    doc.setLocation(agency.getLocation());
+                    doc.setIsOpen(agency.isOpen());
+                    agencySearchRepository.save(doc);
+                });
+                System.out.println("⚡ Elasticsearch synchronisé avec les agences.");
+            }
+            
             System.out.println("Admin: admin@easyrent.com / admin123");
             System.out.println("User: user@easyrent.com / user123");
         }
