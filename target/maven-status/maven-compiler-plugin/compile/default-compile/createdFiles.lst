@@ -6,10 +6,12 @@ com/rental/backend/model/Role.class
 com/rental/backend/model/Driver.class
 com/rental/backend/model/Car.class
 com/rental/backend/controller/AuthController.class
+com/rental/backend/elasticsearch/AgencyDocument.class
 com/rental/backend/service/DriverService.class
 com/rental/backend/elasticsearch/CarSearchRepository.class
 com/rental/backend/repository/DriverRepository.class
 com/rental/backend/controller/DriverController.class
+com/rental/backend/elasticsearch/AgencySearchRepository.class
 com/rental/backend/config/DataLoader.class
 com/rental/backend/repository/BookingRepository.class
 com/rental/backend/service/CarService.class

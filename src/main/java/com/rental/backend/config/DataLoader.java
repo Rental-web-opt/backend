@@ -100,7 +100,7 @@ public class DataLoader implements CommandLineRunner {
                     doc.setBrand(car.getBrand());
                     doc.setType(car.getType());
                     doc.setPricePerDay(car.getPricePerDay());
-                    doc.setAvailable(car.getAvailable());
+                    doc.setAvailable(car.isAvailable());
                     carSearchRepository.save(doc);
                 });
                 System.out.println("⚡ Elasticsearch synchronisé avec les voitures.");

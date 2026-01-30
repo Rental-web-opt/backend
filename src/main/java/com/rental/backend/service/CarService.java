@@ -47,7 +47,7 @@ public class CarService {
         doc.setBrand(car.getBrand());
         doc.setType(car.getType());
         doc.setPricePerDay(car.getPricePerDay());
-        doc.setAvailable(car.getAvailable());
+        doc.setAvailable(car.isAvailable());
         return doc;
     }
 }

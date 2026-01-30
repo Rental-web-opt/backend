@@ -1,5 +1,6 @@
 /home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/model/Agency.java
 /home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/model/Car.java
+/home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/elasticsearch/AgencySearchRepository.java
 /home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/repository/UserRepository.java
 /home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/config/KafkaConfig.java
 /home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/repository/AgencyRepository.java
@@ -28,6 +29,7 @@
 /home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/repository/CarRepository.java
 /home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/service/AgencyService.java
 /home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/controller/DriverController.java
+/home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/elasticsearch/AgencyDocument.java
 /home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/elasticsearch/CarSearchRepository.java
 /home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/controller/NotificationController.java
 /home/denny/Téléchargements/Projet_admin_reseau/backend/src/main/java/com/rental/backend/kafka/KafkaConsumerService.java
