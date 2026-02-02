@@ -7,7 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-//@Component
+@Component
 public class DataLoader implements CommandLineRunner {
 
     @Autowired private UserRepository userRepository;
@@ -82,11 +82,13 @@ public class DataLoader implements CommandLineRunner {
             // Chauffeur
             Driver driver = new Driver();
             driver.setName("Paul Biya");
+            driver.setFullName("Paul Biya");
             driver.setAge(45);
-            driver.setExperience("15 ans");
+            driver.setExperience(15);
             driver.setLocation("Yaoundé");
             driver.setPricePerDay(25000.0);
             driver.setRating(4.8);
+            driver.setAvailable(true);
             driverRepository.save(driver);
 
             System.out.println("=== Données initialisées avec succès ===");

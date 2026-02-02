@@ -4,34 +4,28 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.rental.backend.model.Driver;
+import com.rental.backend.repository.DriverRepository;
 import com.rental.backend.service.DriverService;
 
 @RestController
 @RequestMapping("/api/drivers")
-@CrossOrigin(origins = "http://localhost:3000") // Pour le Frontend Next.js
+@CrossOrigin(origins = "http://localhost:3000")
 public class DriverController {
 
     @Autowired
     private DriverService driverService;
+    
+    @Autowired
+    private DriverRepository driverRepository;
 
-    // GET : Tous les chauffeurs
     @GetMapping
     public List<Driver> getAllDrivers() {
         return driverService.getAllDrivers();
     }
 
-    // GET : Un chauffeur par ID
     @GetMapping("/{id}")
     public ResponseEntity<Driver> getDriverById(@PathVariable Long id) {
         return driverService.getDriverById(id)
@@ -39,19 +33,39 @@ public class DriverController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // GET : Filtrer par ville (Ex: /api/drivers/search?city=Douala)
     @GetMapping("/search")
     public List<Driver> getDriversByCity(@RequestParam String city) {
         return driverService.getDriversByLocation(city);
     }
 
-    // POST : Créer un chauffeur
+    @GetMapping("/available")
+    public List<Driver> getAvailableDrivers() {
+        return driverRepository.findByAvailable(true);
+    }
+
     @PostMapping
     public Driver createDriver(@RequestBody Driver driver) {
         return driverService.saveDriver(driver);
     }
 
-    // DELETE : Supprimer un chauffeur
+    @PutMapping("/{id}")
+    public ResponseEntity<Driver> updateDriver(@PathVariable Long id, @RequestBody Driver driverData) {
+        Driver existing = driverRepository.findById(id).orElse(null);
+        if (existing == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        if (driverData.getFullName() != null) existing.setFullName(driverData.getFullName());
+        if (driverData.getEmail() != null) existing.setEmail(driverData.getEmail());
+        if (driverData.getPhone() != null) existing.setPhone(driverData.getPhone());
+        if (driverData.getLicenseNumber() != null) existing.setLicenseNumber(driverData.getLicenseNumber());
+        if (driverData.getExperience() != null) existing.setExperience(driverData.getExperience());
+        existing.setAvailable(driverData.isAvailable());
+        
+        Driver saved = driverRepository.save(existing);
+        return ResponseEntity.ok(saved);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDriver(@PathVariable Long id) {
         driverService.deleteDriver(id);

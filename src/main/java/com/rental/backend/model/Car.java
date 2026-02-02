@@ -24,6 +24,7 @@ public class Car {
     // IMPORTANT : C'est ce nom que le BookingService cherche
     private Double pricePerDay; 
     private Double pricePerHour;
+    private Double monthlyPrice; // Prix mensuel (avec réduction)
     
     private String location;
     private boolean isAvailable;
