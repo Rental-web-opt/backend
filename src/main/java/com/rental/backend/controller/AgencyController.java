@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.rental.backend.model.Agency;
+import com.rental.backend.dto.AgencyCreationResponse;
 import com.rental.backend.repository.AgencyRepository;
 import com.rental.backend.service.AgencyService;
 
@@ -19,16 +20,31 @@ public class AgencyController {
     @Autowired private AgencyRepository agencyRepository;
 
     @GetMapping
-    public List<Agency> getAll() { return agencyService.getAllAgencies(); }
+    public List<Agency> getAll() { 
+        return agencyService.getAllAgencies(); 
+    }
 
     @GetMapping("/{id}")
     public Agency getOne(@PathVariable Long id) {
         return agencyService.getAgencyById(id).orElse(null);
     }
 
+    /**
+     * Création d'une nouvelle agence
+     * Génère automatiquement un compte utilisateur (Role.AGENCY) avec identifiants
+     * 
+     * @return AgencyCreationResponse contenant l'agence + email + mot de passe généré
+     */
     @PostMapping
-    public Agency create(@RequestBody Agency agency) { 
-        return agencyService.saveAgency(agency); 
+    public ResponseEntity<AgencyCreationResponse> create(@RequestBody Agency agency) {
+        try {
+            AgencyCreationResponse response = agencyService.createAgencyWithCredentials(agency);
+            System.out.println("✅ Nouvelle agence créée: " + response.getEmail());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("❌ Erreur création agence: " + e.getMessage());
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 
     @PutMapping("/{id}")
@@ -38,7 +54,7 @@ public class AgencyController {
             return ResponseEntity.notFound().build();
         }
         
-        // Mise à jour des champs
+        // Mise à jour des champs (sans modifier userId)
         if (agencyData.getName() != null) existing.setName(agencyData.getName());
         if (agencyData.getCity() != null) existing.setCity(agencyData.getCity());
         if (agencyData.getLocation() != null) existing.setLocation(agencyData.getLocation());
@@ -49,7 +65,7 @@ public class AgencyController {
         if (agencyData.getOpeningHours() != null) existing.setOpeningHours(agencyData.getOpeningHours());
         existing.setOpen(agencyData.isOpen());
         
-        Agency saved = agencyRepository.save(existing);
+        Agency saved = agencyService.saveAgency(existing);
         return ResponseEntity.ok(saved);
     }
 
@@ -58,7 +74,7 @@ public class AgencyController {
         if (!agencyRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
-        agencyRepository.deleteById(id);
-        return ResponseEntity.ok(Map.of("message", "Agence supprimée avec succès"));
+        agencyService.deleteAgency(id);
+        return ResponseEntity.ok(Map.of("message", "Agence et compte associé supprimés avec succès"));
     }
 }

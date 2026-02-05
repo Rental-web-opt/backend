@@ -16,6 +16,9 @@ public class Driver {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Lien vers le compte utilisateur du chauffeur
+    private Long userId;
+
     private String fullName;
     private String name; // Garder pour compatibilité
     private Integer age;

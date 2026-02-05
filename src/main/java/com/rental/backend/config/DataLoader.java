@@ -274,7 +274,7 @@ public class DataLoader implements CommandLineRunner {
             driver.setExperience(Integer.parseInt(data[3]));
             driver.setRating(Double.parseDouble(data[4]));
             driver.setBio(data[5]);
-            driver.setPricePerDay(15000 + random.nextInt(25000)); // 15k à 40k
+            driver.setPricePerDay((double) (15000 + random.nextInt(25000))); // 15k à 40k
             driver.setAvailable(random.nextDouble() > 0.2); // 80% disponible
             driver.setPhone("+237 6" + (90000000 + random.nextInt(10000000)));
             driver.setEmail(data[0].toLowerCase().replace(" ", ".") + "@drivers.easyrent.cm");

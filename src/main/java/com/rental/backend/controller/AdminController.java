@@ -4,6 +4,7 @@ import com.rental.backend.model.*;
 import com.rental.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -69,6 +70,8 @@ public class AdminController {
         }
     }
 
+    @Autowired private PasswordEncoder passwordEncoder;
+
     @PutMapping("/users/{id}/password")
     public ResponseEntity<?> resetUserPassword(@PathVariable Long id, @RequestBody Map<String, String> payload) {
         User user = userRepository.findById(id).orElse(null);
@@ -82,8 +85,7 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("message", "Le mot de passe doit contenir au moins 4 caractères"));
         }
 
-        // Note: En production, il faudrait encoder le mot de passe avec BCrypt
-        user.setPassword(newPassword);
+        user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         
         return ResponseEntity.ok(Map.of("message", "Mot de passe réinitialisé avec succès"));

@@ -130,27 +130,24 @@ public class BookingController {
 
     /**
      * Annuler une réservation
+     * L'utilisateur ne peut annuler que SES propres réservations
      */
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<?> cancelBooking(@PathVariable Long id) {
-        Booking booking = bookingRepository.findById(id).orElse(null);
-        
-        if (booking == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> cancelBooking(
+            @PathVariable Long id,
+            @RequestParam Long userId) {
+        try {
+            Booking cancelled = bookingService.cancelBooking(id, userId);
+            return ResponseEntity.ok(Map.of(
+                "message", "Réservation annulée avec succès",
+                "booking", cancelled
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", true,
+                "message", e.getMessage()
+            ));
         }
-
-        if (booking.getStatus() == BookingStatus.COMPLETED) {
-            return ResponseEntity.badRequest()
-                .body(Map.of("message", "Impossible d'annuler une réservation terminée"));
-        }
-
-        booking.setStatus(BookingStatus.CANCELLED);
-        bookingRepository.save(booking);
-        
-        return ResponseEntity.ok(Map.of(
-            "message", "Réservation annulée",
-            "booking", booking
-        ));
     }
 
     /**

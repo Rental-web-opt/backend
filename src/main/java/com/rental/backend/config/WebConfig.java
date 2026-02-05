@@ -15,10 +15,18 @@ public class WebConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins("http://localhost:3000", "http://localhost:3001")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD")
                         .allowedHeaders("*")
-                        .exposedHeaders("Content-Type", "Cache-Control", "Connection")
-                        .allowCredentials(true);
+                        // Headers nécessaires pour SSE (Server-Sent Events)
+                        .exposedHeaders(
+                            "Content-Type", 
+                            "Cache-Control", 
+                            "Connection",
+                            "X-Accel-Buffering",
+                            "Transfer-Encoding"
+                        )
+                        .allowCredentials(true)
+                        .maxAge(3600); // Cache de 1 heure pour les preflight
             }
         };
     }
