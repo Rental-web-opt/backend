@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import com.rental.backend.model.Agency;
 import com.rental.backend.dto.AgencyCreationResponse;
 import com.rental.backend.repository.AgencyRepository;
+import com.rental.backend.repository.BookingRepository;
 import com.rental.backend.service.AgencyService;
 
 @RestController
@@ -18,6 +19,7 @@ import com.rental.backend.service.AgencyService;
 public class AgencyController {
     @Autowired private AgencyService agencyService;
     @Autowired private AgencyRepository agencyRepository;
+    @Autowired private BookingRepository bookingRepository;
 
     @GetMapping
     public List<Agency> getAll() { 
@@ -27,6 +29,11 @@ public class AgencyController {
     @GetMapping("/{id}")
     public Agency getOne(@PathVariable Long id) {
         return agencyService.getAgencyById(id).orElse(null);
+    }
+
+    @GetMapping("/user/{userId}")
+    public Agency getByUser(@PathVariable Long userId) {
+        return agencyService.getAgencyByUserId(userId).orElse(null);
     }
 
     /**
@@ -44,6 +51,19 @@ public class AgencyController {
         } catch (Exception e) {
             System.err.println("❌ Erreur création agence: " + e.getMessage());
             return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    /**
+     * Permet à un utilisateur existant de devenir une agence
+     */
+    @PostMapping("/{userId}/become-agency")
+    public ResponseEntity<?> becomeAgency(@PathVariable Long userId, @RequestBody Agency agency) {
+        try {
+            Agency newAgency = agencyService.createAgencyForUser(userId, agency);
+            return ResponseEntity.ok(newAgency);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -76,5 +96,53 @@ public class AgencyController {
         }
         agencyService.deleteAgency(id);
         return ResponseEntity.ok(Map.of("message", "Agence et compte associé supprimés avec succès"));
+    }
+
+    // ==================== REVENUS AGENCE ====================
+    
+    /**
+     * Revenus d'une agence spécifique par ID agence
+     */
+    @GetMapping("/{id}/revenue")
+    public ResponseEntity<?> getAgencyRevenue(@PathVariable Long id) {
+        if (!agencyRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        Map<String, Object> revenue = new java.util.HashMap<>();
+        
+        Double totalRevenue = bookingRepository.getRevenueByAgencyId(id);
+        revenue.put("revenue", totalRevenue != null ? totalRevenue : 0.0);
+        
+        Long totalBookings = bookingRepository.countByAgencyId(id);
+        revenue.put("totalBookings", totalBookings);
+        
+        Long completedBookings = bookingRepository.countCompletedByAgencyId(id);
+        revenue.put("completedBookings", completedBookings);
+        
+        return ResponseEntity.ok(revenue);
+    }
+
+    /**
+     * Revenus de l'agence liée à un userId (pour le dashboard agence)
+     */
+    @GetMapping("/user/{userId}/revenue")
+    public ResponseEntity<?> getAgencyRevenueByUser(@PathVariable Long userId) {
+        return agencyRepository.findByUserId(userId)
+            .map(agency -> {
+                Map<String, Object> revenue = new java.util.HashMap<>();
+                
+                Double totalRevenue = bookingRepository.getRevenueByAgencyId(agency.getId());
+                revenue.put("revenue", totalRevenue != null ? totalRevenue : 0.0);
+                
+                Long totalBookings = bookingRepository.countByAgencyId(agency.getId());
+                revenue.put("totalBookings", totalBookings);
+                
+                Long completedBookings = bookingRepository.countCompletedByAgencyId(agency.getId());
+                revenue.put("completedBookings", completedBookings);
+                
+                return ResponseEntity.ok((Object) revenue);
+            })
+            .orElse(ResponseEntity.notFound().build());
     }
 }

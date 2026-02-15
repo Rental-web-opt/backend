@@ -23,6 +23,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // 3. Récupérer les réservations d'une voiture spécifique
     List<Booking> findByCarId(Long carId);
 
+    // 5. Récupérer les réservations d'une agence spécifique (via la voiture)
+    List<Booking> findByCarAgencyId(Long agencyId);
+
     // 4. Vérifier les conflits de réservation (chevauchement de dates)
     // Retourne les réservations qui se chevauchent avec la période demandée
     // Exclut les réservations annulées
@@ -44,4 +47,26 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         @Param("carId") Long carId,
         @Param("now") LocalDateTime now
     );
+
+    // ==================== REVENUS ====================
+
+    // 6. Revenu total de la plateforme (réservations confirmées + complétées)
+    @Query("SELECT COALESCE(SUM(b.totalPrice), 0) FROM Booking b " +
+           "WHERE b.status IN ('CONFIRMED', 'COMPLETED')")
+    Double getTotalRevenue();
+
+    // 7. Revenu d'une agence spécifique
+    @Query("SELECT COALESCE(SUM(b.totalPrice), 0) FROM Booking b " +
+           "WHERE b.car.agency.id = :agencyId " +
+           "AND b.status IN ('CONFIRMED', 'COMPLETED')")
+    Double getRevenueByAgencyId(@Param("agencyId") Long agencyId);
+
+    // 8. Nombre de réservations d'une agence
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.car.agency.id = :agencyId")
+    Long countByAgencyId(@Param("agencyId") Long agencyId);
+
+    // 9. Nombre de réservations confirmées/complétées d'une agence  
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.car.agency.id = :agencyId " +
+           "AND b.status IN ('CONFIRMED', 'COMPLETED')")
+    Long countCompletedByAgencyId(@Param("agencyId") Long agencyId);
 }

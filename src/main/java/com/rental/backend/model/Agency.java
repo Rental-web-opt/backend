@@ -43,8 +43,9 @@ public class Agency {
 
     // ==================== HORAIRES D'OUVERTURE ====================
     
-    // Horaires par jour (format simple pour affichage)
-    private String openingHours; // "Lun-Ven: 8h-18h" - gardé pour compatibilité
+    // Horaires par jour (format JSON pour les horaires structurés)
+    @Column(length = 2000)
+    private String openingHours; // Peut contenir JSON ou texte simple - gardé pour compatibilité
     
     // Horaires détaillés par jour
     private String mondayHours;    // "08:00-18:00" ou "fermé"

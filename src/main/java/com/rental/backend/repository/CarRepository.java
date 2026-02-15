@@ -12,5 +12,8 @@ public interface CarRepository extends JpaRepository<Car, Long> {
     List<Car> findByPricePerDayLessThanEqual(Double price);
     
     // Si vous avez d'autres méthodes comme findByLocation, laissez-les.
+    // Si vous avez d'autres méthodes comme findByLocation, laissez-les.
     List<Car> findByLocationContainingIgnoreCase(String location);
+
+    List<Car> findByAgencyId(Long agencyId);
 }

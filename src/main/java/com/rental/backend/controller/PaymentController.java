@@ -3,11 +3,14 @@ package com.rental.backend.controller;
 import com.rental.backend.model.*;
 import com.rental.backend.repository.BookingRepository;
 import com.rental.backend.repository.PaymentRepository;
+import com.rental.backend.repository.UserRepository;
+import com.rental.backend.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -16,15 +19,16 @@ import java.util.UUID;
 @RequestMapping("/api/payments")
 public class PaymentController {
 
-    @Autowired
-    private PaymentRepository paymentRepository;
-    
-    @Autowired
-    private BookingRepository bookingRepository;
+    @Autowired private PaymentRepository paymentRepository;
+    @Autowired private BookingRepository bookingRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private NotificationService notificationService;
+    @Autowired private NotificationController notificationController;
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     /**
      * Récupérer les paiements d'un utilisateur
-     * GET /api/payments/user/{userId}
      */
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Payment>> getUserPayments(@PathVariable Long userId) {
@@ -33,8 +37,7 @@ public class PaymentController {
     }
 
     /**
-     * Alias pour "my-payments" - utilise le paramètre userId
-     * GET /api/payments/my-payments?userId=1
+     * Alias pour "my-payments"
      */
     @GetMapping("/my-payments")
     public ResponseEntity<List<Payment>> getMyPayments(@RequestParam(required = false) Long userId) {
@@ -47,7 +50,6 @@ public class PaymentController {
 
     /**
      * Créer un paiement pour une réservation
-     * POST /api/payments
      */
     @PostMapping
     public ResponseEntity<?> createPayment(@RequestBody Map<String, Object> request) {
@@ -60,7 +62,6 @@ public class PaymentController {
                 return ResponseEntity.badRequest().body(Map.of("error", true, "message", "Réservation introuvable"));
             }
 
-            // Vérifier si un paiement existe déjà
             if (paymentRepository.findByBookingId(bookingId).isPresent()) {
                 return ResponseEntity.badRequest().body(Map.of("error", true, "message", "Un paiement existe déjà pour cette réservation"));
             }
@@ -89,7 +90,6 @@ public class PaymentController {
 
     /**
      * Simuler la création d'un PaymentIntent (pour Stripe)
-     * POST /api/payment/create-payment-intent
      */
     @PostMapping("/create-payment-intent")
     public ResponseEntity<?> createPaymentIntent(@RequestBody Map<String, Object> request) {
@@ -97,8 +97,6 @@ public class PaymentController {
             Double amount = Double.valueOf(request.get("amount").toString());
             String currency = (String) request.getOrDefault("currency", "xaf");
 
-            // En production, ici on appellerait Stripe
-            // Pour la démo, on simule un clientSecret
             String fakeClientSecret = "pi_" + UUID.randomUUID().toString().replace("-", "") + "_secret_demo";
 
             return ResponseEntity.ok(Map.of(
@@ -131,6 +129,9 @@ public class PaymentController {
         if (booking != null && booking.getStatus() == BookingStatus.PENDING) {
             booking.setStatus(BookingStatus.CONFIRMED);
             bookingRepository.save(booking);
+            
+            // === ENVOYER LES NOTIFICATIONS ===
+            sendPaymentConfirmationNotifications(booking, payment);
         }
 
         return ResponseEntity.ok(Map.of(
@@ -175,6 +176,9 @@ public class PaymentController {
         booking.setStatus(BookingStatus.CONFIRMED);
         bookingRepository.save(booking);
 
+        // === ENVOYER LES NOTIFICATIONS ===
+        sendPaymentConfirmationNotifications(booking, payment);
+
         return ResponseEntity.ok(Map.of(
             "message", "Paiement confirmé et réservation validée",
             "payment", payment,
@@ -183,11 +187,84 @@ public class PaymentController {
     }
 
     /**
+     * Envoie les notifications après confirmation d'un paiement.
+     * Notifie: 1) Le client, 2) Tous les admins, 3) L'agence propriétaire du véhicule
+     */
+    private void sendPaymentConfirmationNotifications(Booking booking, Payment payment) {
+        try {
+            Car car = booking.getCar();
+            String vehicleName = car.getBrand() + " " + car.getModel();
+            String startDate = booking.getStartDate().format(DATE_FORMATTER);
+            String endDate = booking.getEndDate().format(DATE_FORMATTER);
+            String agencyName = car.getAgency() != null ? car.getAgency().getName() : "Agence";
+
+            // Récupérer le nom de l'utilisateur
+            String userName = "Utilisateur";
+            var userOpt = userRepository.findById(booking.getUserId());
+            if (userOpt.isPresent()) {
+                userName = userOpt.get().getFullName();
+            }
+
+            // === 1. Notifier le CLIENT ===
+            String clientMessage = String.format(
+                "Paiement de %,.0f CFA confirmé ! Votre réservation du %s du %s au %s est validée. Bonne route !",
+                payment.getAmount(), vehicleName, startDate, endDate
+            );
+            notificationService.createNotification(
+                booking.getUserId(),
+                "✅ Paiement confirmé & Réservation validée",
+                clientMessage,
+                NotificationType.SUCCESS
+            );
+            notificationController.sendNotification(booking.getUserId(), "payment_confirmed", clientMessage);
+            System.out.println("💾 Notification paiement client persistée pour user " + booking.getUserId());
+
+            // === 2. Notifier tous les ADMINS ===
+            List<User> admins = userRepository.findByRole(Role.ADMIN);
+            for (User admin : admins) {
+                String adminMessage = String.format(
+                    "💰 Paiement reçu: %s a payé %,.0f CFA pour %s (%s). Réservation confirmée.",
+                    userName, payment.getAmount(), vehicleName, agencyName
+                );
+                notificationService.createNotification(
+                    admin.getId(),
+                    "💰 Paiement reçu",
+                    adminMessage,
+                    NotificationType.PAYMENT
+                );
+                notificationController.sendNotification(admin.getId(), "payment_confirmed", adminMessage);
+                System.out.println("💾 Notification paiement admin persistée pour admin " + admin.getId());
+            }
+
+            // === 3. Notifier l'AGENCE propriétaire du véhicule ===
+            if (car.getAgency() != null && car.getAgency().getUserId() != null) {
+                Long agencyUserId = car.getAgency().getUserId();
+                String agencyMessage = String.format(
+                    "💰 Paiement reçu ! %s a payé %,.0f CFA pour votre véhicule %s (du %s au %s). Préparez le véhicule !",
+                    userName, payment.getAmount(), vehicleName, startDate, endDate
+                );
+                notificationService.createNotification(
+                    agencyUserId,
+                    "💰 Paiement reçu pour votre véhicule",
+                    agencyMessage,
+                    NotificationType.PAYMENT
+                );
+                notificationController.sendNotification(agencyUserId, "payment_confirmed", agencyMessage);
+                System.out.println("💾 Notification paiement agence persistée pour userId " + agencyUserId);
+            }
+
+            System.out.println("✅ Toutes les notifications de paiement envoyées et persistées");
+        } catch (Exception e) {
+            System.err.println("⚠️ Erreur envoi notifications paiement: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * Endpoint legacy pour compatibilité
      */
     @GetMapping("/methods")
     public ResponseEntity<?> getSavedMethods() {
-        // Pour la démo, retourner une liste vide
         return ResponseEntity.ok(List.of());
     }
 

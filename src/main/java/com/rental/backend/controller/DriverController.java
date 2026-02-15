@@ -63,6 +63,19 @@ public class DriverController {
         }
     }
 
+    /**
+     * Permet à un utilisateur existant de devenir un chauffeur
+     */
+    @PostMapping("/{userId}/become-driver")
+    public ResponseEntity<?> becomeDriver(@PathVariable Long userId, @RequestBody Driver driver) {
+        try {
+            Driver newDriver = driverService.createDriverForUser(userId, driver);
+            return ResponseEntity.ok(newDriver);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<Driver> updateDriver(@PathVariable Long id, @RequestBody Driver driverData) {
         Driver existing = driverRepository.findById(id).orElse(null);

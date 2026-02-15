@@ -32,6 +32,10 @@ public class AgencyService {
         return agencyRepository.findById(id); 
     }
 
+    public Optional<Agency> getAgencyByUserId(Long userId) {
+        return agencyRepository.findByUserId(userId);
+    }
+
     /**
      * Création d'une agence avec génération automatique des identifiants de connexion
      * 
@@ -104,6 +108,39 @@ public class AgencyService {
                 agencySearchRepository.deleteById(id.toString());
             }
         }
+    }
+
+    /**
+     * Crée une agence pour un utilisateur existant et met à jour son rôle
+     */
+    @Transactional
+    public Agency createAgencyForUser(Long userId, Agency agency) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (!userOpt.isPresent()) {
+            throw new RuntimeException("Utilisateur non trouvé");
+        }
+        User user = userOpt.get();
+
+        // Vérifier si l'utilisateur a déjà un rôle autre que USER
+        if (user.getRole() != Role.USER) {
+            throw new RuntimeException("L'utilisateur a déjà un rôle spécial: " + user.getRole());
+        }
+
+        // Lier l'agence
+        agency.setUserId(userId);
+        if (agency.getEmail() == null || agency.getEmail().isEmpty()) {
+            agency.setEmail(user.getEmail());
+        }
+
+        Agency savedAgency = agencyRepository.save(agency);
+        indexInElasticsearch(savedAgency);
+
+        // Mettre à jour le rôle
+        user.setRole(Role.AGENCY);
+        userRepository.save(user);
+
+        System.out.println("✅ Utilisateur " + userId + " promu AGENCE: " + savedAgency.getName());
+        return savedAgency;
     }
 
     // ==================== MÉTHODES UTILITAIRES ====================

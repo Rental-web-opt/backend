@@ -48,8 +48,8 @@ public class DataLoader implements CommandLineRunner {
             System.out.println("║        🚀 INITIALISATION DES DONNÉES EASY-RENT 🚀           ║");
             System.out.println("╚══════════════════════════════════════════════════════════════╝");
 
-            loadUsers();
-            List<Agency> agencies = loadAgencies();
+            List<User> agencyUsers = loadUsers();
+            List<Agency> agencies = loadAgencies(agencyUsers);
             List<Car> cars = loadCars(agencies);
             List<Driver> drivers = loadDrivers();
             loadBookings(cars, drivers);
@@ -80,16 +80,17 @@ public class DataLoader implements CommandLineRunner {
         System.out.println("🗑️ Toutes les données ont été supprimées.");
     }
 
-    private void loadUsers() {
+    private List<User> loadUsers() {
         System.out.println("\n👥 Chargement des utilisateurs...");
         
         // Admin
         createUser("Admin System", "admin@easyrent.com", "admin123", Role.ADMIN);
         
-        // Agences
-        createUser("AutoLux Douala", "agency.douala@easyrent.com", "agency123", Role.AGENCY);
-        createUser("Premium Cars Yaoundé", "agency.yaounde@easyrent.com", "agency123", Role.AGENCY);
-        createUser("Speed Motors Bafoussam", "agency.bafoussam@easyrent.com", "agency123", Role.AGENCY);
+        // Agences - on garde les références pour les lier aux entités Agency
+        List<User> agencyUsers = new java.util.ArrayList<>();
+        agencyUsers.add(createUser("AutoLux Douala", "agency.douala@easyrent.com", "agency123", Role.AGENCY));
+        agencyUsers.add(createUser("Premium Cars Yaoundé", "agency.yaounde@easyrent.com", "agency123", Role.AGENCY));
+        agencyUsers.add(createUser("Speed Motors Bafoussam", "agency.bafoussam@easyrent.com", "agency123", Role.AGENCY));
         
         // Utilisateurs réguliers
         String[] names = {
@@ -105,6 +106,7 @@ public class DataLoader implements CommandLineRunner {
         }
         
         System.out.println("   ✓ " + userRepository.count() + " utilisateurs créés");
+        return agencyUsers;
     }
 
     private User createUser(String name, String email, String password, Role role) {
@@ -116,7 +118,7 @@ public class DataLoader implements CommandLineRunner {
         return userRepository.save(user);
     }
 
-    private List<Agency> loadAgencies() {
+    private List<Agency> loadAgencies(List<User> agencyUsers) {
         System.out.println("\n🏢 Chargement des agences...");
         
         Agency[] agenciesData = {
@@ -145,6 +147,12 @@ public class DataLoader implements CommandLineRunner {
                 "Spécialiste montagne et aventure", "08h-19h", 4.5, 56,
                 Arrays.asList("Montagne", "Aventure", "4x4"))
         };
+
+        // 🔗 Lier les 3 premières agences aux comptes utilisateur AGENCY
+        for (int i = 0; i < agencyUsers.size() && i < agenciesData.length; i++) {
+            agenciesData[i].setUserId(agencyUsers.get(i).getId());
+            System.out.println("   🔗 Agence '" + agenciesData[i].getName() + "' liée au User ID: " + agencyUsers.get(i).getId());
+        }
         
         List<Agency> savedAgencies = Arrays.asList(agencyRepository.saveAll(Arrays.asList(agenciesData)).toArray(new Agency[0]));
         System.out.println("   ✓ " + savedAgencies.size() + " agences créées");

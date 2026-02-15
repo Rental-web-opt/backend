@@ -94,6 +94,39 @@ public class DriverService {
         }
     }
 
+    /**
+     * Crée un chauffeur pour un utilisateur existant et met à jour son rôle
+     */
+    @Transactional
+    public Driver createDriverForUser(Long userId, Driver driver) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (!userOpt.isPresent()) {
+            throw new RuntimeException("Utilisateur non trouvé");
+        }
+        User user = userOpt.get();
+
+        if (user.getRole() != Role.USER) {
+            throw new RuntimeException("L'utilisateur a déjà un rôle spécial: " + user.getRole());
+        }
+
+        driver.setUserId(userId);
+        if (driver.getEmail() == null || driver.getEmail().isEmpty()) {
+            driver.setEmail(user.getEmail());
+        }
+        // Assurer que le nom complet est défini
+        if (driver.getFullName() == null) {
+            driver.setFullName(user.getFullName());
+        }
+
+        Driver savedDriver = driverRepository.save(driver);
+
+        user.setRole(Role.DRIVER);
+        userRepository.save(user);
+
+        System.out.println("✅ Utilisateur " + userId + " promu CHAUFFEUR: " + savedDriver.getFullName());
+        return savedDriver;
+    }
+
     // ==================== MÉTHODES UTILITAIRES ====================
 
     /**

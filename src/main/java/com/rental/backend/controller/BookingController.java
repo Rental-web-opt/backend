@@ -42,6 +42,11 @@ public class BookingController {
         return bookingService.getUserBookings(userId);
     }
 
+    @GetMapping("/agency/{agencyId}")
+    public List<Booking> getByAgency(@PathVariable Long agencyId) {
+        return bookingService.getAgencyBookings(agencyId);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Booking> getById(@PathVariable Long id) {
         return bookingRepository.findById(id)

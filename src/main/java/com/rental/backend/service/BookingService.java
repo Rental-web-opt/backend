@@ -404,6 +404,10 @@ public class BookingService {
         return bookingRepository.findByUserId(userId); 
     }
 
+    public List<Booking> getAgencyBookings(Long agencyId) {
+        return bookingRepository.findByCarAgencyId(agencyId);
+    }
+
     public Optional<Booking> getBookingById(Long id) {
         return bookingRepository.findById(id);
     }

@@ -10,4 +10,5 @@ import com.rental.backend.model.Agency;
 @Repository
 public interface AgencyRepository extends JpaRepository<Agency, Long> {
     List<Agency> findByCity(String city);
+    java.util.Optional<Agency> findByUserId(Long userId);
 }

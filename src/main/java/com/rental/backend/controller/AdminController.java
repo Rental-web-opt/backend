@@ -22,13 +22,50 @@ public class AdminController {
 
     // ==================== STATISTIQUES ====================
     @GetMapping("/stats")
-    public ResponseEntity<Map<String, Long>> getStats() {
-        Map<String, Long> stats = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> getStats() {
+        Map<String, Object> stats = new HashMap<>();
         stats.put("totalUsers", userRepository.count());
         stats.put("totalAgencies", agencyRepository.count());
         stats.put("totalCars", carRepository.count());
         stats.put("totalBookings", bookingRepository.count());
+        
+        // Revenue total de la plateforme
+        Double totalRevenue = bookingRepository.getTotalRevenue();
+        stats.put("totalRevenue", totalRevenue != null ? totalRevenue : 0.0);
+        
         return ResponseEntity.ok(stats);
+    }
+
+    // ==================== REVENUS PAR AGENCE ====================
+    @GetMapping("/revenue-by-agency")
+    public ResponseEntity<List<Map<String, Object>>> getRevenueByAgency() {
+        List<Agency> agencies = agencyRepository.findAll();
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        
+        for (Agency agency : agencies) {
+            Map<String, Object> agencyRevenue = new HashMap<>();
+            agencyRevenue.put("agencyId", agency.getId());
+            agencyRevenue.put("agencyName", agency.getName());
+            agencyRevenue.put("city", agency.getCity());
+            
+            Double revenue = bookingRepository.getRevenueByAgencyId(agency.getId());
+            agencyRevenue.put("revenue", revenue != null ? revenue : 0.0);
+            
+            Long totalBookings = bookingRepository.countByAgencyId(agency.getId());
+            agencyRevenue.put("totalBookings", totalBookings);
+            
+            Long completedBookings = bookingRepository.countCompletedByAgencyId(agency.getId());
+            agencyRevenue.put("completedBookings", completedBookings);
+            
+            result.add(agencyRevenue);
+        }
+        
+        // Trier par revenu décroissant
+        result.sort((a, b) -> Double.compare(
+            (Double) b.get("revenue"), (Double) a.get("revenue")
+        ));
+        
+        return ResponseEntity.ok(result);
     }
 
     // ==================== UTILISATEURS ====================
